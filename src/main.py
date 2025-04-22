@@ -1,4 +1,4 @@
-import asyncio
+# import asyncio
 import pygame
 import numpy as np
 from objects import *
@@ -27,9 +27,10 @@ class Sim:
         self.bg = WHITE
 
         if __name__ == "__main__":
-            asyncio.run(self.main())
+            # asyncio.run(self.main())
+            self.main()
 
-    async def main(self):
+    def main(self):
         pygame.init()
         pygame.display.set_caption("N-Pendulum Sim")
         clock = pygame.time.Clock()
@@ -56,7 +57,7 @@ class Sim:
 
             clock.tick(self.time_scale/self.time_step)
             pygame.display.flip()
-            await asyncio.sleep(0)
+            # await asyncio.sleep(0)
 
     def compute_next(self):
         def F(th, thd):
@@ -65,17 +66,19 @@ class Sim:
         # Used info at https://www.researchgate.net/publication/336868500_Equations_of_Motion_Formulation_of_a_Pendulum_Containing_N-point_Masses and
         # https://travisdoesmath.github.io/pendulum-explainer/ for equations of motion
         def G(th, thd):
+            masses = [mass.m for mass in self.masses.sprites()]
+
             a = []
             b = []
             for j in range(self.N):
                 b_entry = 0 
                 for k in range(self.N):
-                    m_sum = sum(self.masses[i].m*sigma(j, i) for i in range(k, self.N))
+                    m_sum = sum(masses[i]*sigma(j, i) for i in range(k, self.N))
                     if j == k:
-                        a.append(sum(self.masses[i].m*self.l[j]**2*sigma(j, i) for i in range(self.N)))
+                        a.append(sum(masses[i]*self.l[j]**2*sigma(j, i) for i in range(self.N)))
                     else:
                         a.append(m_sum*self.l[j]*self.l[k]*np.cos(th[j] - th[k]))
-                    b_entry -= (self.g*self.l[j]*np.sin(th[j])*self.masses[k].m*sigma(j, k) +
+                    b_entry -= (self.g*self.l[j]*np.sin(th[j])*masses[k]*sigma(j, k) +
                                m_sum*self.l[j]*self.l[k]*np.sin(th[j] - th[k])*thd[j]*thd[k] + 
                                m_sum*self.l[j]*self.l[k]*np.sin(th[k] - th[j])*(thd[j] - thd[k])*thd[k])
                 b.append(b_entry)
@@ -97,10 +100,10 @@ class Sim:
 
     def draw(self):
         x, y = self.get_cartesian(self.theta)
-        xprev, yprev = self.get_cartesian(self.thetaprev)
 
         # draw the traces that are currently enabled
         if self.step > 0:
+            xprev, yprev = self.get_cartesian(self.thetaprev)
             for i, trace in enumerate(self.traces):
                 if trace.on:
                     trace.update(x[i], y[i], xprev[i], yprev[i])
@@ -112,7 +115,7 @@ class Sim:
             pygame.draw.line(self.screen, BLACK, (x[i-1], y[i-1]), (x[i], y[i]), 5)
 
         # draw masses
-        self.masses.update()
+        self.masses.update(x, y)
         self.masses.draw(self.screen)
 
     def handle_keyboard(self, key):
@@ -156,7 +159,7 @@ class Sim:
         return traces
 
     def initialize_masses(self):
-        group = pygame.sprite.Group()
+        group = MassGroup()
         for _ in range(self.N):
             mass = Mass(1, 6, RED)
             group.add(mass)

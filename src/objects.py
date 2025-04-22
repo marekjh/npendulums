@@ -44,6 +44,15 @@ class TraceSprite(pygame.sprite.Sprite):
         self.rect.height = Trace.height(i)
 
 
+class MassGroup(pygame.sprite.Group):
+    def __init__(self):
+        super().__init__()
+    
+    def update(self, x, y):
+        for i, sprite in enumerate(self.sprites()):
+            sprite.update(x[i], y[i])
+
+
 class Mass(pygame.sprite.Sprite):
     def __init__(self, m, radius, color):
         super().__init__()
@@ -56,7 +65,7 @@ class Mass(pygame.sprite.Sprite):
 
         self.rect = self.image.get_rect()
     
-    def update(self, xcurr, ycurr):
-        self.rect.centerx = xcurr
-        self.rect.centery = ycurr
+    def update(self, x, y):
+        self.rect.centerx = x
+        self.rect.centery = y
 
