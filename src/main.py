@@ -7,20 +7,25 @@ from config import *
 
 # TODO: Add UI to make things like masses and pendulum lengths customizeable
 
-N = 2 # TODO: Rework to get user input from frontend
-
 class Sim:
-    def __init__(self, **kwargs):
+    def __init__(self):
         self.screen = pygame.display.set_mode((SIZE, SIZE))
-        self.trace = Trace()
-        self.masses = [Mass(1, RED, 6) for _ in range(N)]
-        self.theta, self.thetad, self.l, self.g = kwargs.values()
+
+        self.N = 2
+        self.g = 9.81
+        self.theta = np.ones(self.N)*np.pi/2
+        self.thetad = np.zeros(self.N)
+        self.l = np.ones(self.N)
+
+        self.traces = self.initialize_traces()
+        self.masses = self.initialize_masses()
         self.time_step = 0.01
         self.time_scale = 1
-        self.paused = True
+        self.paused = False
         self.adjust_mode = 0
         self.step = 0
         self.bg = WHITE
+
         if __name__ == "__main__":
             asyncio.run(self.main())
 
@@ -62,12 +67,12 @@ class Sim:
         def G(th, thd):
             a = []
             b = []
-            for j in range(N):
+            for j in range(self.N):
                 b_entry = 0 
-                for k in range(N):
-                    m_sum = sum(self.masses[i].m*sigma(j, i) for i in range(k, N))
+                for k in range(self.N):
+                    m_sum = sum(self.masses[i].m*sigma(j, i) for i in range(k, self.N))
                     if j == k:
-                        a.append(sum(self.masses[i].m*self.l[j]**2*sigma(j, i) for i in range(N)))
+                        a.append(sum(self.masses[i].m*self.l[j]**2*sigma(j, i) for i in range(self.N)))
                     else:
                         a.append(m_sum*self.l[j]*self.l[k]*np.cos(th[j] - th[k]))
                     b_entry -= (self.g*self.l[j]*np.sin(th[j])*self.masses[k].m*sigma(j, k) +
@@ -75,7 +80,7 @@ class Sim:
                                m_sum*self.l[j]*self.l[k]*np.sin(th[k] - th[j])*(thd[j] - thd[k])*thd[k])
                 b.append(b_entry)
 
-            a = np.array(a).reshape(N, N)
+            a = np.array(a).reshape(self.N, self.N)
             b = np.array(b)
             return np.linalg.solve(a, b)
 
@@ -85,28 +90,30 @@ class Sim:
     def get_cartesian(self, th):
         scale = SIM_DIMENSION / (2*(np.sum(self.l)))
         x, y = [scale*self.l[0]*np.sin(th[0]) + SIZE/2], [scale*self.l[0]*np.cos(th[0]) + SIZE/2]
-        for i in range(1, N):
+        for i in range(1, self.N):
             x.append(x[i-1] + scale*self.l[i]*np.sin(th[i]))
             y.append(y[i-1] + scale*self.l[i]*np.cos(th[i]))
         return np.array(x), np.array(y)
 
     def draw(self):
         x, y = self.get_cartesian(self.theta)
+        xprev, yprev = self.get_cartesian(self.thetaprev)
 
-        if self.trace.on and self.step > 0:
-            xprev, yprev = self.get_cartesian(self.thetaprev)
-            if not self.adjust_mode:
-                self.trace.update(x[-1], y[-1], xprev[-1], yprev[-1])
-            self.trace.draw(self.screen)
-
+        # draw the traces that are currently enabled
+        if self.step > 0:
+            for i, trace in enumerate(self.traces):
+                if trace.on:
+                    trace.update(x[i], y[i], xprev[i], yprev[i])
+                    trace.draw(self.screen)
+                
+        # draw massless connections between masses
         pygame.draw.line(self.screen, BLACK, (SIZE/2, SIZE/2), (x[0], y[0]), 5)
-        for i in range(1, N):
+        for i in range(1, self.N):
             pygame.draw.line(self.screen, BLACK, (x[i-1], y[i-1]), (x[i], y[i]), 5)
 
-        for i in range(N):
-            self.masses[i].rect.centerx, self.masses[i].rect.centery = x[i], y[i]
-            self.masses[i].draw(self.screen)
-            
+        # draw masses
+        self.masses.update()
+        self.masses.draw(self.screen)
 
     def handle_keyboard(self, key):
         if key == pygame.K_SPACE:
@@ -138,8 +145,23 @@ class Sim:
 
     def handle_mouse_up(self):
         if self.adjust_mode:
-            self.thetad = np.zeros(N)
+            self.thetad = np.zeros(self.N)
             self.step, self.adjust_mode = 0, 0
+    
+    def initialize_traces(self):
+        traces = []
+        for i in range(self.N):
+            trace = Trace(TRACE_COLORS[i % len(TRACE_COLORS)])
+            traces.append(trace)
+        return traces
+
+    def initialize_masses(self):
+        group = pygame.sprite.Group()
+        for _ in range(self.N):
+            mass = Mass(1, 6, RED)
+            group.add(mass)
+        return group
+
 
 if __name__ == "__main__":
-    Sim(theta=np.ones(N)*np.pi/2, thetad=np.zeros(N), l=np.ones(N), g=9.81) 
+    Sim()
