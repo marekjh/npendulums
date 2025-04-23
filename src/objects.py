@@ -26,6 +26,9 @@ class Trace():
     def draw(self, surface):
         for sprite in self.spritelist:
             surface.blit(sprite.image, sprite.rect)
+    
+    def empty(self):
+        self.spritelist = []
 
     @classmethod
     def size(cls, x):

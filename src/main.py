@@ -11,11 +11,11 @@ class Sim:
     def __init__(self):
         self.screen = pygame.display.set_mode((SIZE, SIZE))
 
-        self.N = 4
+        self.N = 2
         self.g = 9.81
+        self.l = np.ones(self.N)
         self.theta = np.ones(self.N)*np.pi/2
         self.thetad = np.zeros(self.N)
-        self.l = np.ones(self.N)
 
         self.traces = self.initialize_traces()
         self.masses = self.initialize_masses()
@@ -86,7 +86,6 @@ class Sim:
             b = np.array(b)
             return np.linalg.solve(a, b)
 
-        self.thetaprev, self.thetadprev = self.theta, self.thetad
         self.theta, self.thetad = RK4(F, G, self.theta, self.thetad, self.time_step)
         
     def get_cartesian(self, th):
@@ -101,13 +100,11 @@ class Sim:
         x, y = self.get_cartesian(self.theta)
 
         # draw the traces that are currently enabled
-        if self.step > 0:
-            xprev, yprev = self.get_cartesian(self.thetaprev)
-            for i, trace in enumerate(self.traces):
-                if trace.on:
-                    if not self.paused:
-                        trace.update(xprev[i], yprev[i])
-                    trace.draw(self.screen)
+        for i, trace in enumerate(self.traces):
+            if trace.on:
+                if not self.paused:
+                    trace.update(x[i], y[i])
+                trace.draw(self.screen)
                 
         # draw massless connections between masses
         pygame.draw.line(self.screen, BLACK, (SIZE/2, SIZE/2), (x[0], y[0]), 5)
@@ -123,11 +120,11 @@ class Sim:
             self.paused = not self.paused
 
     def handle_mouse_click(self, mousepos):
-        for i, mass in enumerate(self.masses):
+        for i, mass in enumerate(self.masses.sprites()):
             if mass.rect.collidepoint(mousepos):
                 self.paused = True
-                self.trace.screen.fill(BLACK)
                 self.adjust_mode = i + 1
+                self.empty_traces()
     
     def handle_mouse_drag(self, mousepos):
         if self.adjust_mode:
@@ -160,6 +157,10 @@ class Sim:
             mass = Mass(1, 6, RED)
             group.add(mass)
         return group
+    
+    def empty_traces(self):
+        for trace in self.traces:
+            trace.empty()
 
 
 if __name__ == "__main__":
