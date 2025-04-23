@@ -4,44 +4,46 @@ import numpy as np
 
 class Trace(pygame.sprite.Group):
     # Parameters for dictating how the trace looks
-    a = 1
-    A = 5
-    M = 50
+    a = 0.5
+    A = 12
+    M = 500
 
     def __init__(self, color):
         super().__init__()
 
         self.on = True
         self.color = color
+        self.spritelist = self.sprites()
     
-    def update(self, x, y, xprev, yprev):
-        sprite = TraceSprite(x, y, xprev, yprev, self.color)
-        self.sprites().insert(0, sprite)
-        if len(self.sprites()) > Trace.M:
-            del self.sprites()[-1]
-        for i, sprite in enumerate(self.sprites()):
+    def update(self, x, y):
+        sprite = TraceSprite(x, y, self.color)
+        self.spritelist.insert(0, sprite)
+        if len(self.spritelist) > Trace.M:
+            del self.spritelist[-1]
+        for i, sprite in enumerate(self.spritelist):
             sprite.update(i)
 
     @classmethod
-    def height(cls, x):
+    def size(cls, x):
         return cls.A*np.exp(-cls.a*x)
 
 
 class TraceSprite(pygame.sprite.Sprite):
-    def __init__(self, x, y, xprev, yprev, color):
+    def __init__(self, color):
         super().__init__()
 
-        size = np.sqrt((x-xprev)**2 + (y-yprev)**2)
-
-        self.image = pygame.Surface((size, size))
-        self.image.fill(color)
+        self.image = pygame.Surface((2*Trace.A, 2*Trace.A))
+        self.image.set_colorkey(BLACK)
+        pygame.draw.circle(self.image, color, (Trace.A, Trace.A), Trace.A)
 
         self.rect = self.image.get_rect()
-        self.rect.midleft = (xprev, yprev)
-        self.rect.midright = (x, y)
     
-    def update(self, i):
-        self.rect.height = Trace.height(i)
+    def update(self, x, y, i):
+        size = Trace.size(i)
+        pygame.transform.scale(self.image, (size, size))
+        self.rect.centerx = x
+        self.rect.centery = y
+
 
 
 class MassGroup(pygame.sprite.Group):

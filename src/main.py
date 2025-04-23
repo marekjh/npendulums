@@ -66,7 +66,7 @@ class Sim:
         # Used info at https://www.researchgate.net/publication/336868500_Equations_of_Motion_Formulation_of_a_Pendulum_Containing_N-point_Masses and
         # https://travisdoesmath.github.io/pendulum-explainer/ for equations of motion
         def G(th, thd):
-            masses = [mass.m for mass in self.masses.sprites()]
+            masses = [mass.m for mass in self.masses]
 
             a = []
             b = []
@@ -106,7 +106,7 @@ class Sim:
             xprev, yprev = self.get_cartesian(self.thetaprev)
             for i, trace in enumerate(self.traces):
                 if trace.on:
-                    trace.update(x[i], y[i], xprev[i], yprev[i])
+                    trace.update(xprev[i], yprev[i])
                     trace.draw(self.screen)
                 
         # draw massless connections between masses
