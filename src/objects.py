@@ -2,26 +2,30 @@ import pygame
 from config import *
 import numpy as np
 
-class Trace(pygame.sprite.Group):
+class Trace():
     # Parameters for dictating how the trace looks
-    a = 0.5
-    A = 12
-    M = 500
+    a = 0.01
+    A = 6
+    M = 100
 
     def __init__(self, color):
-        super().__init__()
-
         self.on = True
         self.color = color
-        self.spritelist = self.sprites()
+        self.spritelist = []
     
     def update(self, x, y):
-        sprite = TraceSprite(x, y, self.color)
+        sprite = TraceSprite(self.color)
+        sprite.rect.centerx = x
+        sprite.rect.centery = y
         self.spritelist.insert(0, sprite)
         if len(self.spritelist) > Trace.M:
             del self.spritelist[-1]
         for i, sprite in enumerate(self.spritelist):
             sprite.update(i)
+    
+    def draw(self, surface):
+        for sprite in self.spritelist:
+            surface.blit(sprite.image, sprite.rect)
 
     @classmethod
     def size(cls, x):
@@ -38,12 +42,9 @@ class TraceSprite(pygame.sprite.Sprite):
 
         self.rect = self.image.get_rect()
     
-    def update(self, x, y, i):
+    def update(self, i):
         size = Trace.size(i)
-        pygame.transform.scale(self.image, (size, size))
-        self.rect.centerx = x
-        self.rect.centery = y
-
+        self.image = pygame.transform.scale(self.image, (2*size, 2*size))
 
 
 class MassGroup(pygame.sprite.Group):

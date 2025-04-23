@@ -11,7 +11,7 @@ class Sim:
     def __init__(self):
         self.screen = pygame.display.set_mode((SIZE, SIZE))
 
-        self.N = 2
+        self.N = 4
         self.g = 9.81
         self.theta = np.ones(self.N)*np.pi/2
         self.thetad = np.zeros(self.N)
