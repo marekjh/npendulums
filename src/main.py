@@ -1,4 +1,4 @@
-# import asyncio
+import asyncio
 import pygame
 import numpy as np
 from objects import *
@@ -27,10 +27,9 @@ class Sim:
         self.bg = WHITE
 
         if __name__ == "__main__":
-            # asyncio.run(self.main())
-            self.main()
+            asyncio.run(self.main())
 
-    def main(self):
+    async def main(self):
         pygame.init()
         pygame.display.set_caption("N-Pendulum Sim")
         clock = pygame.time.Clock()
@@ -57,7 +56,7 @@ class Sim:
 
             clock.tick(self.time_scale/self.time_step)
             pygame.display.flip()
-            # await asyncio.sleep(0)
+            await asyncio.sleep(0)
 
     def compute_next(self):
         def F(th, thd):
@@ -106,7 +105,8 @@ class Sim:
             xprev, yprev = self.get_cartesian(self.thetaprev)
             for i, trace in enumerate(self.traces):
                 if trace.on:
-                    trace.update(xprev[i], yprev[i])
+                    if not self.paused:
+                        trace.update(xprev[i], yprev[i])
                     trace.draw(self.screen)
                 
         # draw massless connections between masses
@@ -121,10 +121,6 @@ class Sim:
     def handle_keyboard(self, key):
         if key == pygame.K_SPACE:
             self.paused = not self.paused
-        elif key == pygame.K_t:
-            self.trace.on = not self.trace.on
-        elif key == pygame.K_r:
-            self.trace.screen.fill(BLACK)
 
     def handle_mouse_click(self, mousepos):
         for i, mass in enumerate(self.masses):
